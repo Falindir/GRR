@@ -2,15 +2,10 @@
 /**
  * index.php
  * Ce script fait partie de l'application GRR
- * Dernière modification : $Date: 2010-04-07 15:38:14 $
- * @author    Laurent Delineau <laurent.delineau@ac-poitiers.fr>
- * @author    Marc-Henri PAMISEUX <marcori@users.sourceforge.net>
- * @copyright Copyright 2003-2008 Laurent Delineau
- * @copyright Copyright 2008 Marc-Henri PAMISEUX
+ * Dernière modification : $Date: 2018-04-11 11:00$
+ * @author    Laurent Delineau & JeromeB & Yan Naessens
+ * @copyright Copyright 2003-2018 Team DEVOME - JeromeB
  * @link      http://www.gnu.org/licenses/licenses.html
- * @package   admin
- * @version   $Id: index.php,v 1.10 2010-04-07 15:38:14 grr Exp $
- * @filesource
  *
  * This file is part of GRR.
  *
@@ -18,18 +13,8 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- *
- * GRR is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with GRR; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-if (!@file_exists("/var/www/lcs/includes/headerauth.inc.php"))
-	error_reporting (E_ALL);
+
 require_once("include/config.inc.php");
 if (file_exists("include/connect.inc.php"))
 	include "include/connect.inc.php";
@@ -47,7 +32,7 @@ if ($dbsys == "mysql")
 	if (file_exists("include/connect.inc.php"))
 	{
 		require_once("include/connect.inc.php");
-		$db = @mysqli_connect("$dbHost", "$dbUser", "$dbPass", "$dbPort");
+		$db = @mysqli_connect("$dbHost", "$dbUser", "$dbPass", "$dbDb", "$dbPort");
 		if ($db)
 		{
 			if (mysqli_select_db($db, "$dbDb"))
@@ -92,9 +77,9 @@ if ($dbsys == "mysql")
 		echo "<h1 class=\"center\">Gestion et Réservation de Ressources</h1>\n";
 		echo "<div style=\"text-align:center;\"><span style=\"color:red;font-weight:bold\">".$msg."</span>\n";
 		echo "<ul><li>Soit vous procédez à une mise à jour vers une nouvelle version de GRR. Dans ce cas, vous devez procéder à une mise à jour de la base de données MySql.<br />";
-		echo "<b><a href='./admin/admin_maj.php'>Mettre à jour la base Mysql</a></b><br /></li>";
+		echo "<b><a href='../installation/maj.php'>Mettre à jour la base Mysql</a></b><br /></li>";
 		echo "<li>Soit l'installation de GRR n'est peut-être pas terminée. Vous pouvez procéder à une installation/réinstallation de la base.<br />";
-		echo "<a href='install_mysql.php'>Installer la base $dbsys</a></li></ul></div>";
+		echo "<a href='./installation/install_mysql.php'>Installer la base $dbsys</a></li></ul></div>";
 		?>
 	</body>
 	</html>
@@ -224,87 +209,8 @@ else if ((Settings::get('sso_statut') == 'lemon_visiteur') || (Settings::get('ss
 	}
 	if (grr_resumeSession())
 		header("Location: ".htmlspecialchars_decode(page_accueil())."");
-// Cas d'une authentification LCS
 }
-else if (Settings::get('sso_statut') == 'lcs')
-{
-	include LCS_PAGE_AUTH_INC_PHP;
-	include LCS_PAGE_LDAP_INC_PHP;
-	list($idpers,$login) = isauth();
-	if ($idpers)
-	{
-		list($user, $groups)=people_get_variables($login, true);
-		$lcs_tab_login["nom"] = $user["nom"];
-		$lcs_tab_login["email"] = $user["email"];
-		$long = strlen($user["fullname"]) - strlen($user["nom"]);
-		$lcs_tab_login["fullname"] = substr($user["fullname"], 0, $long) ;
-		foreach ($groups as $value)
-			$lcs_groups[] = $value["cn"];
-		// A ce stade, l'utilisateur est authentifié par LCS
-		// Etablir à nouveau la connexion à la base
-		if (empty($db_nopersist))
-			$db_c = mysqli_connect("p:".$dbHost, $dbUser, $dbPass);
-		else
-			$db_c = mysqli_connect($dbHost, $dbUser, $dbPass);
-		if (!$db_c || !mysqli_select_db ($db_c, $dbDb))
-		{
-			echo "\n<p>\n" . get_vocab('failed_connect_db') . "\n";
-			exit;
-		}
-		if (is_eleve($login))
-			$user_ext_authentifie = 'lcs_eleve';
-		else
-			$user_ext_authentifie = 'lcs_non_eleve';
-		$password = '';
-		$result = grr_opensession($login,$password,$user_ext_authentifie,$lcs_tab_login,$lcs_groups) ;
-		// On écrit les données de session et ferme la session
-		session_write_close();
-		$message = '';
-		if ($result == "2")
-		{
-			$message = get_vocab("echec_connexion_GRR");
-			$message .= " ".get_vocab("wrong_pwd");
-		}
-		else if ($result == "3")
-		{
-			$message = get_vocab("echec_connexion_GRR");
-			$message .= "<br />". get_vocab("importation_impossible");
-		}
-		else if ($result == "4")
-		{
-			$message = get_vocab("echec_connexion_GRR");
-			$message .= " ".get_vocab("causes_possibles");
-			$message .= "<br />- ".get_vocab("wrong_pwd");
-			$message .= "<br />- ". get_vocab("echec_authentification_ldap");
-		}
-		else if ($result == "5")
-		{
-			$message = get_vocab("echec_connexion_GRR");
-			$message .= "<br />". get_vocab("connexion_a_grr_non_autorisee");
-		}
-		if ($message != '')
-		{
-			fatal_error(1, $message);
-			die();
-		}
-		if (grr_resumeSession())
-			header("Location: ".htmlspecialchars_decode(page_accueil())."");
-	}
-	else
-	{
-		// L'utilisateur n'a pas été identifié'
-		if (Settings::get("authentification_obli") == 1)
-		{
-			// authentification obligatoire, l'utilisateur est renvoyé vers une page de connexion
-			require_once("include/session.inc.php");
-			grr_closeSession($_GET['auto']);
-			header("Location:".LCS_PAGE_AUTHENTIF);
-		}
-		else
-			header("Location: ".htmlspecialchars_decode(page_accueil())."");
-		// authentification non obligatoire, l'utilisateur est simple visiteur
-	}
-}
+
 // Cas d'une authentification Lasso
 if ((Settings::get('sso_statut') == 'lasso_visiteur') || (Settings::get('sso_statut') == 'lasso_utilisateur'))
 {

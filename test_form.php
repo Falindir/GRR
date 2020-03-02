@@ -1,4 +1,20 @@
 <?php
+/*
+ * test_form.php
+ *
+ * Ce script fait partie de l'application GRR
+ * Dernière modification : $Date: 2017-12-16 14:00$
+ * @author    Laurent Delineau & JeromeB
+ * @copyright Copyright 2003-2018 Team DEVOME - JeromeB
+ * @link      http://www.gnu.org/licenses/licenses.html
+ *
+ * This file is part of GRR.
+ *
+ * GRR is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ */
 include "include/admin.inc.php";
 $grr_script_name = "edit_entry.php";
 if (isset($_GET["id"]))
@@ -56,7 +72,7 @@ var_dump($_POST);
 <body>
 	<div class="container">
 		<form role="form" method="POST" action="">
-			<?= $form->select('', 'beneficiaire', ucfirst(trim(get_vocab("reservation au nom de"))).get_vocab("deux_points"), $rows);?>
+			<?= $form->select('', 'beneficiaire', ucfirst(trim(get_vocab("reservation_au_nom_de"))).get_vocab("deux_points"), $rows);?>
 			<?= $form->text('name', get_vocab("namebooker"));?>
 			<?= $form->textarea('description', get_vocab("fulldescription"));?>
 			<?= $form->checkbox('keys', 'y', get_vocab("status_clef").get_vocab("deux_points"), get_vocab("msg_courrier"));?>
